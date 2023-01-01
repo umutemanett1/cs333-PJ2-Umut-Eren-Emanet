@@ -1,0 +1,284 @@
+#include <iostream>
+#include <string>
+#include <cstdio>
+#include <bits/stdc++.h>
+#define VDIM  20
+using namespace std; 
+
+typedef struct{
+  char  prjName;
+  int   pos;
+  int   value; 
+} projectType;
+int getProjectCount()
+{
+  int value=-1;
+  char charStr[64];
+  string inpStr;
+   while(1)
+   {
+     cout <<"Enter Project Count ";
+     //scanf("%d", &value);
+     cin.getline(charStr,64);
+     inpStr = string(charStr);
+     value = stoi((const std::string)inpStr); 
+     if (value > 0 && value <= 20) break;
+     else cout << "Invalid input " << endl;
+   }
+   return value;  
+}
+
+
+string getProjectNames(int count)
+{
+  string tmpStr="";
+  char   tmpChar[256];
+    while (1)
+    {
+     cout << "Enter letters represent the project names without space : ";
+     cin.getline(tmpChar,256);
+     tmpStr=string(tmpChar); 
+    if (tmpStr.length() == count) break;
+    else cout <<"Invalid input " << tmpStr <<endl;
+    }
+    for (int i=0; i < tmpStr.length(); i++)
+      tmpStr[i]= toupper(tmpStr[i]);
+    return tmpStr;
+}
+
+string getPrerequests(int count)
+{
+   string tmpStr="";
+   char tmpChar[256];
+   string preStr; 
+   int i;
+    cout << "Enter Prerequest in (A,B) (B,C) form";
+    cin.getline(tmpChar, 256);
+    tmpStr = string(tmpChar); 
+
+    for (i=0; i < tmpStr.length(); i++)
+      tmpStr[i]= toupper(tmpStr[i]);
+    return tmpStr; 
+}
+
+string getValues(int count)
+{
+   string tmpStr="";
+   int value;
+   char tmpChar[256];
+   while(1)
+   {
+     cout << "Enter Values with spaces";
+     cin.getline(tmpChar, 256);
+     tmpStr = string(tmpChar); 
+
+     stringstream streamInput(tmpStr);
+     string word;
+     int i=0; 
+     while (streamInput >> word)
+     {
+  
+          value = stoi((const std::string)word); 
+         i++;
+     }
+
+     if (i == count) break;
+     else cout << "Invalid Input " << tmpStr << endl; 
+   }
+    for (int i=0; i < tmpStr.length(); i++)
+      tmpStr[i]= toupper(tmpStr[i]);
+    return tmpStr; 
+}
+
+projectType* getParams(int count, string prjNames, string values)
+{
+   projectType *pArr = new projectType[20];
+   string intStr;
+   int intVal;
+   pArr[0].pos =0;
+   pArr[0].value = 0;
+   pArr[0].prjName = '0';
+   
+   for (int i=1; i <= count; i++)
+   {
+      pArr[i].pos = i;
+      pArr[i].prjName = prjNames[i-1];
+   }
+
+   stringstream streamInput(values); 
+   for (int i=0; i < count; i++)
+   {
+        streamInput >> intStr;
+        intVal = stoi((const std::string)intStr);
+        pArr[i+1].value = intVal;
+   } 
+
+   return pArr;
+}
+int getPos(char prjName, projectType *p)
+{
+   int i;
+   for (i=0; i < 20; i++)
+   {
+      if (p[i].prjName == prjName) return p[i].pos;
+   }
+   return -1;
+}
+
+int getVal(char prjName, projectType *p)
+{
+   int i;
+   for (i=0; i < 20; i++)
+   {
+      if (p[i].prjName == prjName) return p[i].value;
+   }
+   return -1;
+}
+void fillRevenues(int count, int pArr[20][20], projectType *p)
+{
+   int i;
+   int bottomRow = count + 1;
+   for (i=0; i < 20; i++)
+   {
+      if (p[i].value > 0)
+       {
+            pArr[0][p[i].pos] = p[i].value;
+            //cout <<"Placed pos " << p[i].prjName << " Pos " << p[i].value << endl;
+       }
+      else if (  p[i].value < 0)
+      {
+            pArr[bottomRow][p[i].pos] = p[i].value;
+            //cout <<"Placed pos2 " << p[i].prjName << " Pos " << p[i].value << " POS Line " << bottomRow << endl;
+      } 
+   }
+}
+bool bfsImplementation(int residualGraph[VDIM][VDIM], int s, int t, int parent[])
+{
+    
+       bool visitedNodes[VDIM];
+        for (int i=0; i < sizeof(visitedNodes); i++)
+         visitedNodes[i] =0;
+ 
+    
+       queue<int> myQ;
+
+      myQ.push(s);
+        visitedNodes[s] = true;
+        parent[s] = -1;
+ 
+
+    while (!myQ.empty()) {
+        int u = myQ.front();
+
+          myQ.pop();
+ 
+           for (int v = 0; v < VDIM; v++) {
+               if (visitedNodes[v] == false && residualGraph[u][v] > 0) {
+                if (v == t) {
+                    parent[v] = u;
+                    return true;
+                }
+                    myQ.push(v);
+                      parent[v] = u;
+                         visitedNodes[v] = true;
+            }
+        }
+    }
+ 
+    return false;
+}
+ 
+
+void placeDependencies(int pArr[20][20], string preRequest, projectType *p)
+{ 
+  int tmpPos1, tmpPos2;
+  int tmpVal1;
+  string depPair;
+  stringstream streamInput(preRequest); 
+   while (streamInput >> depPair)
+   {
+        if (depPair.empty()) break;
+        tmpPos1 = getPos(depPair[1], p);
+        tmpPos2 = getPos(depPair[3], p);
+        tmpVal1 = getVal(depPair[3], p);
+        if ((tmpPos1 < 0) || (tmpPos2<0))  break;
+        pArr[tmpPos1][tmpPos2] = tmpVal1;
+   } 
+
+
+}
+
+
+int fordFulkersonImplementation(int graphArr[VDIM][VDIM], int s, int t)
+{
+     int x, y;
+    int resMat[VDIM][VDIM];
+       for (x = 0; x < VDIM; x++)
+           for (y = 0; y < VDIM; y++)
+                resMat[x][y] = graphArr[x][y];
+ 
+      int parent[VDIM];
+ 
+     int max_flow = 0;
+ 
+    while (bfsImplementation(resMat, s, t, parent)) {
+        int path_flow = INT_MAX;
+        for (y = t; y != s; y = parent[y]) {
+            x = parent[y];
+            path_flow = min(path_flow, resMat[x][y]);
+        }
+ 
+        for (y = t; y != s; y = parent[y]) {
+            x = parent[y];
+            resMat[x][y] -= path_flow;
+            resMat[y][x] += path_flow;
+        }
+ 
+        max_flow += path_flow;
+       
+    }
+   
+      return max_flow;
+
+}
+
+/*
+*/
+int main()
+{
+    int maxCount=7;
+    projectType *pArr;    
+    int i,j;
+    int inpMatrice[VDIM][VDIM];
+    string projectNames;
+    string preReq;
+    string valStr;
+    string decisionStr;  
+    maxCount = getProjectCount();
+    projectNames = getProjectNames(maxCount);
+    valStr = getValues(maxCount);
+    preReq = getPrerequests(maxCount);
+    // Create input array 2D
+    //Fill all elements with 0;
+    for (i=0; i < VDIM; i++)
+    {
+      for (j=0; j <VDIM;j++)
+       inpMatrice[i][j] = 0; 
+    }
+    pArr = getParams(maxCount, projectNames, valStr);
+    fillRevenues(maxCount, inpMatrice, pArr);
+    placeDependencies(inpMatrice, preReq, pArr);
+    for (int k=0; k < maxCount +2; k++)
+    {
+      for (int l=0; l < maxCount +2;l++)
+       cout << inpMatrice[k][l] << " ";
+      cout << endl; 
+    }
+   cin >> decisionStr;
+    
+   if (decisionStr.compare("Decision") == 0)
+
+   cout << "Maximum Profit : " << fordFulkersonImplementation(inpMatrice, 0, maxCount -1) << endl;
+
+}
+
